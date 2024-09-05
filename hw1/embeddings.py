@@ -42,7 +42,9 @@ class Embeddings:
         :return: A 2D array of shape (len(words), embedding_size) where
             for each i, the ith row is the embedding for words[i]
         """
-        raise NotImplementedError("Problem 1b has not been completed yet!")
+        if type(words) == str:
+            words = [words]
+        return self.vectors[np.array(list(map(self.indices.__getitem__, words))),:]
 
     @classmethod
     def from_file(cls, filename: str) -> "Embeddings":
@@ -53,4 +55,14 @@ class Embeddings:
         :param filename: The name of the file containing the embeddings
         :return: An Embeddings object containing the loaded embeddings
         """
-        raise NotImplementedError("Problem 1b has not been completed yet!")
+        vectors = []
+        words = []
+
+        with open(filename, "r") as embedding_file:
+            for line in embedding_file:
+                line_words = line.split(" ")
+                word, embedding = line_words[0], np.fromstring(" ".join(line_words[1:]), dtype=np.float64, sep=" ")
+                words.append(word)
+                vectors.append(embedding)
+        
+        return Embeddings(words, np.array(vectors))

@@ -19,8 +19,11 @@ def cosine_sim(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     :return: An array of shape (m, n), where the entry in row i and
         column j is the cosine similarity between x[i] and y[j]
     """
-    raise NotImplementedError("Problem 3b has not been completed yet!")
+    
+    x = np.apply_along_axis(lambda row_vec: row_vec / np.sqrt(row_vec @ row_vec), 1, x)
+    y = np.apply_along_axis(lambda row_vec: row_vec / np.sqrt(row_vec @ row_vec), 1, y)
 
+    return x @ y.T
 
 def get_closest_words(embeddings: Embeddings, vectors: np.ndarray,
                       k: int = 1) -> List[List[str]]:
@@ -37,7 +40,14 @@ def get_closest_words(embeddings: Embeddings, vectors: np.ndarray,
         k words that are closest to vectors[i] in the embedding space,
         not necessarily in order
     """
-    raise NotImplementedError("Problem 3c has not been completed yet!")
+
+    index_to_words = {i: w for i, w in enumerate(embeddings.words)}
+
+    def find_closest(vec):
+        return list(map(lambda i: index_to_words[i], np.argsort(cosine_sim(embeddings.vectors, vec.reshape(1, -1)).reshape(-1))[::-1][:k]))
+
+    return list(map(find_closest, vectors))
+    
 
 
 # This type alias represents the format that the testing data should be
@@ -59,7 +69,27 @@ def load_analogies(filename: str) -> AnalogiesDataset:
         format of the data is described in the problem set and in the
         docstring for the AnalogiesDataset type alias
     """
-    raise NotImplementedError("Problem 2b has not been completed yet!")
+    analogy_dict = {}
+    key = None
+    tuple_list = []
+
+    with open(filename, "r") as analogy_file:
+        
+        for line in analogy_file:
+            line = line.strip()
+            if line.startswith(":"):
+                if len(tuple_list) != 0:
+                    analogy_dict[key] = tuple_list
+                    tuple_list = []
+                key = line.split(" ")[1]
+                analogy_dict[key] = None
+                continue
+            tuple_list.append(tuple(line.split(" ")))
+        # The last one
+        analogy_dict[key] = tuple_list
+
+    return analogy_dict
+
 
 
 def run_analogy_test(embeddings: Embeddings, test_data: AnalogiesDataset,
@@ -80,4 +110,5 @@ def run_analogy_test(embeddings: Embeddings, test_data: AnalogiesDataset,
         that maps each relation type to the analogy question accuracy
         attained by embeddings on analogies from that relation type
     """
-    raise NotImplementedError("Problem 3d has not been completed yet!")
+
+    return 
