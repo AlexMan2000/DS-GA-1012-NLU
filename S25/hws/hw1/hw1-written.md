@@ -41,4 +41,8 @@ The results for the experiment are as follows:
 | big : bigger :: cold : _x_      | colder       |  cold     |     cold   |      cold  |
 | big : bigger :: quick : _x_     | quicker      |  quick    |     quick   |      quick  |
 
-In this experiment, we see that the 
+In this experiment, we see that generally all three GloVe embedding size performs roughly the same. However, for the "big:bigger::small:x" question, only Glove 200 answers correctly. This is consistent with the findings from the paper, saying that one way to improve accuracy is to use a larger embedding size.
+
+
+
+
