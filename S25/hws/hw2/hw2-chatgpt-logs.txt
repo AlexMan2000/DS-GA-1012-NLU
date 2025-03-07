@@ -1,0 +1,411 @@
+def init_tester(directory: str) -> Trainer:
+    """
+    Prolem 2b: Implement this function.
+
+    Creates a Trainer object that will be used to test a fine-tuned
+    model on the IMDb test set. The Trainer should fulfill the criteria
+    listed in the problem set.
+
+    :param directory: The directory where the model being tested is
+        saved
+    :return: A Trainer used for testing
+    """
+    model = BertForSequenceClassification.from_pretrained(directory)
+    training_args = TrainingArguments(
+        # output_dir="./checkpoints",  # Directory to save the checkpoints
+        # per_device_train_batch_size=8,
+        # num_train_epochs=4,
+        output_dir="./results"
+        # logging_dir='./logs',
+        # save_strategy="epoch",  # Save the model at the end of each epoch
+    )
+
+    trainer = Trainer(
+    args=training_args,
+    model= model,
+    # train_dataset=train_data,
+    # eval_dataset=val_data,
+    compute_metrics= compute_metrics,)
+    return trainer Modify this functio such that the directory is passed into the TrainingArguments in the init_tester
+
+
+    Here's the modified init_tester function where the directory is passed into TrainingArguments to specify where the trained model is stored. This ensures that the output directory for testing results matches the model directory.
+
+python
+复制
+编辑
+from transformers import BertForSequenceClassification, Trainer, TrainingArguments
+
+def init_tester(directory: str) -> Trainer:
+    """
+    Problem 2b: Implement this function.
+
+    Creates a Trainer object that will be used to test a fine-tuned
+    model on the IMDb test set. The Trainer should fulfill the criteria
+    listed in the problem set.
+
+    :param directory: The directory where the model being tested is saved.
+    :return: A Trainer used for testing.
+    """
+    # Load the trained model from the specified directory
+    model = BertForSequenceClassification.from_pretrained(directory)
+
+    # Pass `directory` into TrainingArguments as the output directory
+    training_args = TrainingArguments(
+        output_dir=directory,  # Set output directory for test results
+        per_device_eval_batch_size=8,  # Batch size for testing
+        do_predict=True,  # Ensures the Trainer is used for inference
+        logging_dir=f"{directory}/logs",  # Log directory
+        save_strategy="no",  # Disable saving to prevent overwriting
+        report_to="none"  # Disable reporting to WandB or TensorBoard
+    )
+
+    trainer = Trainer(
+        args=training_args,
+        model=model,
+        compute_metrics=compute_metrics  # Function for evaluation
+    )
+
+    return trainer
+
+
+    🔹 Key Modifications
+✅ output_dir=directory → Now, directory is passed into TrainingArguments to store test results in the model's directory.
+✅ per_device_eval_batch_size=8 → Sets batch size for evaluation.
+✅ do_predict=True → Ensures the Trainer is used for testing/inference.
+✅ save_strategy="no" → Disables checkpoint saving to prevent overwriting the trained model.
+✅ report_to="none" → Disables reporting logs to external services (like TensorBoard or WandB).
+
+
+
+
+For tester, if we don't have TestingArguments in huggiingface, how should we set up the testing 
+ChatGPT 说：
+If Hugging Face's TrainingArguments does not have a built-in TestingArguments, you can still set up model testing manually. Here’s how you can structure the testing phase:
+
+🔹 Steps for Model Testing in Hugging Face Without TestingArguments
+1️⃣ Load the Trained Model
+First, load the best saved model after training:
+
+python
+复制
+编辑
+from transformers import AutoModelForSequenceClassification
+
+# Load the best model from the checkpoint directory
+model_path = "./checkpoints"  # Ensure this is where the trained model is saved
+model = AutoModelForSequenceClassification.from_pretrained(model_path)
+This loads the fine-tuned model for evaluation.
+
+2️⃣ Prepare the Test Dataset
+Ensure that your test dataset is properly tokenized:
+
+python
+复制
+编辑
+from transformers import AutoTokenizer
+
+# Load the tokenizer
+tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+# Tokenize the test dataset (assuming test_data is a Hugging Face dataset)
+def tokenize_function(example):
+    return tokenizer(example["text"], truncation=True, padding="max_length")
+
+test_data = test_data.map(tokenize_function, batched=True)
+If test_data is a list of text samples, convert it into a dataset:
+
+python
+复制
+编辑
+from datasets import Dataset
+
+test_texts = ["Example sentence 1", "Example sentence 2"]
+test_data = Dataset.from_dict({"text": test_texts})
+test_data = test_data.map(tokenize_function, batched=True)
+3️⃣ Set Up Trainer for Evaluation
+Since Trainer does not require TrainingArguments for inference, we can reuse the trained model:
+
+python
+复制
+编辑
+from transformers import Trainer
+
+trainer = Trainer(
+    model=model,
+    eval_dataset=test_data
+)
+4️⃣ Run Model Evaluation
+If ground-truth labels are available, compute metrics:
+
+python
+复制
+编辑
+import numpy as np
+
+# Define metric function
+def compute_metrics(eval_pred):
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)
+    accuracy = (predictions == labels).mean()
+    return {"accuracy": accuracy}
+
+# Evaluate on the test set
+results = trainer.evaluate()
+print("Test Results:", results)
+If there are no labels, just generate predictions:
+
+python
+复制
+编辑
+predictions = trainer.predict(test_data)
+print("Predictions:", predictions.predictions)
+🔹 Alternative: Manual Model Testing (Without Trainer)
+If you prefer direct PyTorch inference, you can manually run the model on test samples:
+
+python
+复制
+编辑
+import torch
+
+# Set model to evaluation mode
+model.eval()
+
+# Tokenize input text manually
+text = "This is an example test sentence."
+inputs = tokenizer(text, return_tensors="pt")
+
+# Run inference
+with torch.no_grad():
+    outputs = model(**inputs)
+    logits = outputs.logits
+
+# Convert logits to class prediction
+predicted_class = torch.argmax(logits, dim=-1).item()
+print(f"Predicted Class: {predicted_class}")
+🔹 Summary of Testing Without TestingArguments
+Step	Action
+1️⃣ Load model	Load fine-tuned model from saved checkpoint
+2️⃣ Prepare test dataset	Tokenize test data properly
+3️⃣ Use Trainer for evaluation	Pass test dataset into Trainer
+4️⃣ Compute metrics	Use compute_metrics for accuracy or other metrics
+5️⃣ Manual inference (optional)	Run inference with PyTorch if needed
+
+
+
+
+what does accuracy.compute return? A python dictionary?
+ChatGPT 说：
+Yes, accuracy.compute(references=labels, predictions=predictions) returns a Python dictionary.
+
+🔹 What Does It Return?
+The evaluate.load("accuracy") function loads the accuracy metric from Hugging Face's evaluate library, and calling .compute(...) calculates the accuracy score based on the given references (true labels) and predictions.
+
+The output is:
+
+python
+复制
+编辑
+{"accuracy": value}
+where value is a floating-point number representing the accuracy.
+
+🔹 Example Output
+Let's assume the true labels (references) and predictions (predictions) are:
+
+python
+复制
+编辑
+labels = [0, 1, 1, 0, 1]  # True labels
+predictions = [0, 1, 0, 0, 1]  # Model predictions
+If we compute accuracy:
+
+python
+复制
+编辑
+import evaluate
+import numpy as np
+
+# Load accuracy metric
+accuracy = evaluate.load("accuracy")
+
+# Define labels and predictions
+labels = [0, 1, 1, 0, 1]
+predictions = [0, 1, 0, 0, 1]
+
+# Compute accuracy
+result = accuracy.compute(references=labels, predictions=predictions)
+
+print(result)  # Output: {'accuracy': 0.8}
+📌 Explanation:
+
+4 out of 5 predictions are correct → 80% accuracy.
+The function returns a dictionary: {"accuracy": 0.8}.
+🔹 How It Works in compute_metrics
+In your function:
+
+python
+复制
+编辑
+def compute_metrics(eval_preds):
+    accuracy = evaluate.load("accuracy")  # Load metric
+    logits, labels = eval_preds  # Unpack model predictions and true labels
+    predictions = np.argmax(logits, axis=-1)  # Convert logits to class labels
+    return accuracy.compute(references=labels, predictions=predictions)  # Returns a dictionary
+np.argmax(logits, axis=-1) converts raw logits into predicted class indices.
+accuracy.compute(...) returns the accuracy in dictionary form.
+🔹 Why Does It Return a Dictionary?
+The Trainer class in Hugging Face expects evaluation metrics as a dictionary, allowing multiple metrics to be computed at once.
+
+If you wanted to compute multiple metrics (e.g., accuracy & F1-score), you could modify compute_metrics like this:
+
+python
+复制
+编辑
+def compute_metrics(eval_preds):
+    accuracy = evaluate.load("accuracy")
+    f1 = evaluate.load("f1")
+
+    logits, labels = eval_preds
+    predictions = np.argmax(logits, axis=-1)
+
+    return {
+        "accuracy": accuracy.compute(references=labels, predictions=predictions)["accuracy"],
+        "f1": f1.compute(references=labels, predictions=predictions, average="weighted")["f1"]
+    }
+✅ Now the Trainer will return:
+
+python
+复制
+编辑
+{"accuracy": 0.85, "f1": 0.82}
+Would you like me to modify this for a multi-class classification problem? 🚀
+
+您说：
+what else metric does evaluate module have?
+ChatGPT 说：
+​The Hugging Face evaluate library offers a comprehensive suite of metrics to assess machine learning models across various tasks. Here's an overview of the available metrics:​
+
+🔹 Categories of Metrics in evaluate
+1️⃣ Generic Metrics
+Applicable across multiple tasks, these metrics include:​
+
+Accuracy: Proportion of correct predictions among the total.​
+huggingface.co
+Precision: Ratio of true positive predictions to the total predicted positives.​
+Recall: Ratio of true positive predictions to the total actual positives.​
+F1 Score: Harmonic mean of precision and recall.​
+Perplexity: Measures the uncertainty in predicting the next token; commonly used in language modeling.​
+2️⃣ Task-Specific Metrics
+Designed for particular machine learning tasks:​
+huggingface.co
++1
+github.com
++1
+
+BLEU (Bilingual Evaluation Understudy Score): Evaluates the quality of text generation, especially in machine translation.​
+huggingface.co
+ROUGE (Recall-Oriented Understudy for Gisting Evaluation): Assesses the quality of text summarization by comparing overlap with reference summaries.​
+huggingface.co
+METEOR (Metric for Evaluation of Translation with Explicit ORdering): Evaluates machine translation by considering synonyms, stemming, and paraphrasing.​
+huggingface.co
+WER (Word Error Rate): Measures the performance of speech recognition systems by calculating the edit distance between the predicted and reference transcriptions.​
+CER (Character Error Rate): Similar to WER but operates at the character level, useful for languages without clear word boundaries.​
+github.com
+TER (Translation Edit Rate): Calculates the number of edits required to change a system output into one of the references.​
+3️⃣ Dataset-Specific Metrics
+Tailored for specific benchmarks or datasets:​
+huggingface.co
+
+GLUE (General Language Understanding Evaluation): A collection of metrics for evaluating natural language understanding tasks.​
+SQuAD (Stanford Question Answering Dataset) Metrics: Includes Exact Match and F1 Score metrics specific to the SQuAD dataset.​
+huggingface.co
+🔹 Accessing Available Metrics
+To explore the full list of metrics:
+
+Visit the Evaluate Organization on Hugging Face Hub:
+
+Access interactive demos and documentation for each metric.​
+huggingface.co
+Link: Evaluate - Hugging Face​
+huggingface.co
++2
+github.com
++2
+huggingface.co
++2
+Use the evaluate Library to List Metrics:
+
+Programmatically retrieve available metrics:​
+python
+复制
+编辑
+import evaluate
+evaluate.list_evaluation_modules(module_type="metric", include_community=False)
+This command lists all built-in metrics. Set include_community=True to include community-contributed metrics.
+🔹 Loading and Using a Metric
+To utilize a specific metric:
+
+Load the Metric:
+
+python
+复制
+编辑
+import evaluate
+metric = evaluate.load("metric_name")
+Replace "metric_name" with the desired metric's name, such as "accuracy", "bleu", or "wer".
+
+Compute the Metric:
+
+python
+复制
+编辑
+results = metric.compute(predictions=preds, references=refs)
+predictions: Model's output.​
+references: Ground truth labels.​
+
+
+
+def init_trainer(model_name: str, train_data: Dataset, val_data: Dataset,
+                 use_bitfit: bool = False) -> Trainer:
+    """
+    Prolem 2b: Implement this function.
+
+    Creates a Trainer object that will be used to fine-tune a BERT-tiny
+    model on the IMDb dataset. The Trainer should fulfill the criteria
+    listed in the problem set.
+
+    :param model_name: The identifier listed in the Hugging Face Model
+        Hub for the pre-trained model that will be fine-tuned
+    :param train_data: The training data used to fine-tune the model
+    :param val_data: The validation data used for hyperparameter tuning
+    :param use_bitfit: If True, then all parameters will be frozen other
+        than bias terms
+    :return: A Trainer used for training
+    """
+    # Define training arguments
+    def initialize_model():
+        return init_model(None, model_name, use_bitfit)
+
+    training_args = TrainingArguments(
+        output_dir="./checkpoints",  # Directory to save the checkpoints
+        # per_device_train_batch_size=8,
+        eval_steps=200,
+        save_steps=200,
+        num_train_epochs=4,
+        logging_dir='./logs',
+        evaluation_strategy="epoch",
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+        metric_for_best_model="accuracy",
+        greater_is_better=True,  # Save the model at the end of each epoch
+    )
+
+    trainer = Trainer(
+        args=training_args,
+        model_init= initialize_model,
+        train_dataset=train_data,
+        eval_dataset=val_data,
+        device="cuda",
+        compute_metrics=compute_metrics
+    )
+    return trainer If we want to use cuda, how to set the function's parameter
