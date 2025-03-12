@@ -409,3 +409,180 @@ def init_trainer(model_name: str, train_data: Dataset, val_data: Dataset,
         compute_metrics=compute_metrics
     )
     return trainer If we want to use cuda, how to set the function's parameter
+
+
+For the training process within a single run, is it true that the larger the checkpoint number is, the longer the model is trained?
+ChatGPT 说：
+Yes, within a single training run, a larger checkpoint number generally means the model has been trained for a longer duration. Checkpoints are typically saved at fixed intervals (e.g., after every 
+𝑁
+N steps or epochs), so a higher checkpoint number indicates that more training iterations have been completed.
+
+However, there are a few nuances to consider:
+
+Checkpoint Frequency: The interval at which checkpoints are saved affects their numbering. If checkpoints are saved every 1000 steps, for example, then a checkpoint labeled "checkpoint_50000" means the model has trained for 50,000 steps.
+
+Training Schedule: If learning rate schedules, early stopping, or other training adjustments are involved, later checkpoints may not necessarily imply better model performance.
+
+Resumed Training: If training is interrupted and later resumed from a checkpoint, the numbering might still increase even if the training session was not continuous.
+
+Would you like more details on checkpointing strategies or best practices?
+
+您说：
+
+Given these file, how to get the trainable parameters of the model
+ChatGPT 说：
+To get the trainable parameters of the model from these checkpoint files, follow these steps:
+
+1. Load the Model Configuration
+The config.json file contains the model architecture details, including the number of layers, hidden units, etc. If you're using a Hugging Face model, you can load it with:
+
+python
+复制
+编辑
+from transformers import AutoConfig
+
+config = AutoConfig.from_json_file("path/to/config.json")
+print(config)
+2. Load the Model Weights
+The model weights are stored in model.safetensors. You can load them using:
+
+python
+复制
+编辑
+from safetensors.torch import load_file
+import torch
+
+weights = load_file("path/to/model.safetensors")
+print(weights.keys())  # Check available weight tensors
+3. Reconstruct the Model and Check Trainable Parameters
+If you're using a Hugging Face model:
+
+python
+复制
+编辑
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained("path/to/checkpoint-5000")
+Then, check the trainable parameters:
+
+python
+复制
+编辑
+trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(f"Trainable Parameters: {trainable_params}")
+If it's a custom PyTorch model, load it like this:
+
+python
+复制
+编辑
+import torch
+
+model = YourModelClass(config)  # Ensure you define YourModelClass correctly
+model.load_state_dict(torch.load("path/to/model.safetensors"))
+model.train()  # Ensure it's in training mode
+
+trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(f"Trainable Parameters: {trainable_params}")
+Would you like help adapting this to a specific model architecture?
+
+
+2/2
+
+您说：
+AttributeError                            Traceback (most recent call last)
+<ipython-input-24-f79f587a00f4> in <cell line: 0>()
+     11 
+     12 from transformers import AutoConfig
+---> 13 config = AutoConfig.from_json_file(config_path)
+     14 
+     15 # Load the state_dict from safetensors
+
+AttributeError: type object 'AutoConfig' has no attribute 'from_json_file' It shows the error, how to fix it
+ChatGPT 说：
+The error occurs because AutoConfig does not have a method called .from_json_file(). Instead, you should use .from_pretrained() to load the configuration directly from the checkpoint directory.
+
+Fix:
+Modify your code to use:
+
+python
+复制
+编辑
+from transformers import AutoConfig
+
+# Load the model configuration correctly
+config = AutoConfig.from_pretrained("path/to/checkpoint-5000")
+
+print(config)
+Explanation:
+AutoConfig.from_pretrained() automatically detects and loads the config.json file from the given directory.
+from_json_file() does not exist in AutoConfig, which is why you get the AttributeError.
+Let me know if you need further assistance! 🚀
+
+您说：
+---------------------------------------------------------------------------
+RuntimeError                              Traceback (most recent call last)
+<ipython-input-25-2ea1486a2010> in <cell line: 0>()
+     20 
+     21 # Load the model weights
+---> 22 model.load_state_dict(state_dict)
+     23 
+     24 # Move model to GPU if available
+
+/usr/local/lib/python3.11/dist-packages/torch/nn/modules/module.py in load_state_dict(self, state_dict, strict, assign)
+   2582 
+   2583         if len(error_msgs) > 0:
+-> 2584             raise RuntimeError(
+   2585                 "Error(s) in loading state_dict for {}:\n\t{}".format(
+   2586                     self.__class__.__name__, "\n\t".join(error_msgs)
+
+RuntimeError: Error(s) in loading state_dict for BertModel:
+	Missing key(s) in state_dict: "embeddings.word_embeddings.weight", "embeddings.position_embeddings.weight", "embeddings.token_type_embeddings.weight", "embeddings.LayerNorm.weight", "embeddings.LayerNorm.bias", "encoder.layer.0.attention.self.query.weight", "encoder.layer.0.attention.self.query.bias", "encoder.layer.0.attention.self.key.weight", "encoder.layer.0.attention.self.key.bias", "encoder.layer.0.attention.self.value.weight", "encoder.layer.0.attention.self.value.bias", "encoder.layer.0.attention.output.dense.weight", "encoder.layer.0.attention.output.dense.bias", "encoder.layer.0.attention.output.LayerNorm.weight", "encoder.layer.0.attention.output.LayerNorm.bias", "encoder.layer.0.intermediate.dense.weight", "encoder.layer.0.intermediate.dense.bias", "encoder.layer.0.output.dense.weight", "encoder.layer.0.output.dense.bias", "encoder.layer.0.output.LayerNorm.weight", "encoder.layer.0.output.LayerNorm.bias", "encoder.layer.1.attention.self.query.weight", "encoder.layer.1.attention.self.query.bias", "encoder.layer.1.attention.self.key.weight", "encoder.layer.1.attention.self.key.bias", "encoder.layer.1.attention.self.value.weight", "encoder.layer.1.attention.self.value.bias", "encoder.layer.1.attention.output.dense.weight", "encoder.layer.1.attention.output.dense.bias", "encoder.layer.1.attention.output.LayerNorm.weight", "encoder.layer.1.attention.output.LayerNorm.bias", "encoder.layer.1.intermediate.dense.weight", "encoder.layer.1.intermediate.dense.bias", "enco...
+	Unexpected key(s) in state_dict: "bert.embeddings.LayerNorm.bias", "bert.embeddings.LayerNorm.weight", "bert.embeddings.position_embeddings.weight", "bert.embeddings.token_type_embeddings.weight", "bert.embeddings.word_embeddings.weight", "bert.encoder.layer.0.attention.output.LayerNorm.bias", "bert.encoder.layer.0.attention.output.LayerNorm.weight", "bert.encoder.layer.0.attention.output.dense.bias", "bert.encoder.layer.0.attention.output.dense.weight", "bert.encoder.layer.0.attention.self.key.bias", "bert.encoder.layer.0.attention.self.key.weight", "bert.encoder.layer.0.attention.self.query.bias", "bert.encoder.layer.0.attention.self.query.weight", "bert.encoder.layer.0.attention.self.value.bias", "bert.encoder.layer.0.attention.self.value.weight", "bert.encoder.layer.0.intermediate.dense.bias", "bert.encoder.layer.0.intermediate.dense.weight", "bert.encoder.layer.0.output.LayerNorm.bias", "bert.encoder.layer.0.output.LayerNorm.weight", "bert.encoder.layer.0.output.dense.bias", "bert.encoder.layer.0.output.dense.weight", "bert.encoder.layer.1.attention.output.LayerNorm.bias", "bert.encoder.layer.1.attention.output.LayerNorm.weight", "bert.encoder.layer.1.attention.output.dense.bias", "bert.encoder.layer.1.attention.output.dense.weight", "bert.encoder.layer.1.attention.self.key.bias", "bert.encoder.layer.1.attention.self.key.weight", "bert.encoder.layer.1.attention.self.query.bias", "bert.encoder.layer.1.attention.self.query.weight", "bert.encoder.layer.1.attention.self.... now this error
+ChatGPT 说：
+This RuntimeError is caused by a mismatch between the expected model architecture and the state dictionary you are trying to load. Essentially, the model you initialized does not align with the keys stored in the checkpoint.
+
+Fixing the Issue
+1. Ensure You Are Loading the Correct Model Type
+The error indicates you are working with a BERT-based model, as it contains keys like:
+
+bert.embeddings.word_embeddings.weight
+bert.encoder.layer.0.attention.self.query.weight
+If your model is indeed based on BERT, use AutoModel to correctly load it:
+
+from transformers import AutoModel
+
+checkpoint_path = "path/to/checkpoint-5000"
+
+# Load model correctly using the checkpoint directory
+model = AutoModel.from_pretrained(checkpoint_path)
+2. Ensure the Checkpoint Matches the Model Architecture
+If the checkpoint was trained on a specific variant of BERT (e.g., bert-base-uncased or bert-large-cased), you must initialize the correct model:
+
+from transformers import AutoModel
+
+# Specify the correct base model
+model_name = "bert-base-uncased"  # Change if necessary
+
+# Initialize model with the same architecture
+model = AutoModel.from_pretrained(model_name)
+
+# Load checkpoint state dict
+import torch
+state_dict = torch.load("path/to/checkpoint-5000/model.safetensors")
+
+# Update model with the new weights
+model.load_state_dict(state_dict, strict=False)  # Set strict=False to ignore mismatched keys
+3. If Using safetensors, Load Weights Correctly
+If your weights are stored in .safetensors, load them properly before assigning them to the model:
+
+from safetensors.torch import load_file
+
+state_dict = load_file("path/to/checkpoint-5000/model.safetensors")
+
+# Load into model
+model.load_state_dict(state_dict, strict=False)
+Why This Fix Works
+AutoModel.from_pretrained(checkpoint_path) automatically loads the correct configuration and weights.
+If the checkpoint structure doesn’t match, setting strict=False ignores extra/missing keys.
+Ensuring correct bert-base-uncased architecture prevents key mismatches.
+Try these fixes and let me know if the error persists! 🚀
