@@ -13,7 +13,22 @@ For hyperparameter tuning, it focuses on batch size and learning rate, while kee
 To achieve this, we could use GridSampler for an exhaustive search across all hyperparameter combinations, ensuring fair evaluation by maintaining consistency in data splits and cross-validation strategy. The best-performing combination for each task is selected based on evaluation results. Once identified, the optimal hyperparameters are then used to fine-tune the model on the test set, and the final results are reported in a summary table.
 
 ## Problem 3a
+The results are shown in the following table:
 
+| | Validation Accuracy | Learning Rate | Batch Size |
+|---|---|---|---|
+| Without BitFit | 0.8896 | 0.0001 | 8 |
+| With BitFit | 0.6346 | 0.0003 | 16 |
 
 ## Problem 3b
 
+
+The results are shown in the following table:
+| | # Trainable Parameters | Test Accuracy |
+|---|---|---|
+| Without BitFit | 4385920 | 0.8776 |
+| With BitFit | 3087 | 0.6357 |
+
+
+**Comments:**
+The Bifit method does not perform as well as suggested in the original paper. Both validation and test accuracy drop significantly when using Bifit, which is expected since it involves far fewer trainable parameters, limiting optimization flexibility. Empirically, the results do not support the claim that Bifit outperforms full model fine-tuning. However, Bifit remains a promising approach due to its reduced training time and resource requirements. If achieving the best possible accuracy (e.g., classification performance) is the priority, fine-tuning the entire model is still the preferable choice.
