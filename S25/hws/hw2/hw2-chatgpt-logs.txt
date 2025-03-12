@@ -126,9 +126,6 @@ test_data = test_data.map(tokenize_function, batched=True)
 3️⃣ Set Up Trainer for Evaluation
 Since Trainer does not require TrainingArguments for inference, we can reuse the trained model:
 
-python
-复制
-编辑
 from transformers import Trainer
 
 trainer = Trainer(
@@ -138,9 +135,6 @@ trainer = Trainer(
 4️⃣ Run Model Evaluation
 If ground-truth labels are available, compute metrics:
 
-python
-复制
-编辑
 import numpy as np
 
 # Define metric function
@@ -155,17 +149,13 @@ results = trainer.evaluate()
 print("Test Results:", results)
 If there are no labels, just generate predictions:
 
-python
-复制
-编辑
+
 predictions = trainer.predict(test_data)
 print("Predictions:", predictions.predictions)
 🔹 Alternative: Manual Model Testing (Without Trainer)
 If you prefer direct PyTorch inference, you can manually run the model on test samples:
 
-python
-复制
-编辑
+
 import torch
 
 # Set model to evaluation mode
@@ -203,25 +193,18 @@ The evaluate.load("accuracy") function loads the accuracy metric from Hugging Fa
 
 The output is:
 
-python
-复制
-编辑
 {"accuracy": value}
 where value is a floating-point number representing the accuracy.
 
 🔹 Example Output
 Let's assume the true labels (references) and predictions (predictions) are:
 
-python
-复制
-编辑
+
 labels = [0, 1, 1, 0, 1]  # True labels
 predictions = [0, 1, 0, 0, 1]  # Model predictions
 If we compute accuracy:
 
-python
-复制
-编辑
+
 import evaluate
 import numpy as np
 
@@ -243,9 +226,7 @@ The function returns a dictionary: {"accuracy": 0.8}.
 🔹 How It Works in compute_metrics
 In your function:
 
-python
-复制
-编辑
+
 def compute_metrics(eval_preds):
     accuracy = evaluate.load("accuracy")  # Load metric
     logits, labels = eval_preds  # Unpack model predictions and true labels
@@ -258,9 +239,7 @@ The Trainer class in Hugging Face expects evaluation metrics as a dictionary, al
 
 If you wanted to compute multiple metrics (e.g., accuracy & F1-score), you could modify compute_metrics like this:
 
-python
-复制
-编辑
+
 def compute_metrics(eval_preds):
     accuracy = evaluate.load("accuracy")
     f1 = evaluate.load("f1")
@@ -274,9 +253,7 @@ def compute_metrics(eval_preds):
     }
 ✅ Now the Trainer will return:
 
-python
-复制
-编辑
+
 {"accuracy": 0.85, "f1": 0.82}
 Would you like me to modify this for a multi-class classification problem? 🚀
 
@@ -336,9 +313,7 @@ huggingface.co
 Use the evaluate Library to List Metrics:
 
 Programmatically retrieve available metrics:​
-python
-复制
-编辑
+
 import evaluate
 evaluate.list_evaluation_modules(module_type="metric", include_community=False)
 This command lists all built-in metrics. Set include_community=True to include community-contributed metrics.
@@ -347,18 +322,13 @@ To utilize a specific metric:
 
 Load the Metric:
 
-python
-复制
-编辑
 import evaluate
 metric = evaluate.load("metric_name")
 Replace "metric_name" with the desired metric's name, such as "accuracy", "bleu", or "wer".
 
 Compute the Metric:
 
-python
-复制
-编辑
+
 results = metric.compute(predictions=preds, references=refs)
 predictions: Model's output.​
 references: Ground truth labels.​
