@@ -214,7 +214,7 @@ class MultipleChoicePipeline(Pipeline):
         :return: The logit scores assigned to each next-token prediction
             as well as the input_ids tensor from input_
         """
-        with torch.no_grad(): 
+        with torch.no_grad(): # since in __init__ we set lm.eval()
             outputs = self.model(**input_)
 
         return {

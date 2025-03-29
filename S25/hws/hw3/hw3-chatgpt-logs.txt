@@ -159,3 +159,44 @@ loss.shape = (24,)
 Because you want to mask out pad_token_id tokens later and compute loss only over valid tokens.
 If you used "mean" or "sum", you couldn’t do this easily.
 
+What could be the synonyms for "in fact,"
+
+
+ChatGPT 说：
+Good question!
+Here are some good synonyms or alternative phrases for "in fact", depending on the context:
+
+✅ Common Synonyms
+Actually
+
+Indeed
+
+As a matter of fact
+
+In reality
+
+Truthfully
+
+To be precise
+
+In truth
+
+It turns out
+
+The truth is
+
+🔥 Examples in sentences
+Original	Alternative
+In fact, I don't like coffee.	Actually, I don't like coffee.
+In fact, she has three degrees.	Indeed, she has three degrees.
+In fact, he never called back.	As a matter of fact, he never called back.
+🎯 When to use which?
+"Actually" → More casual, conversational
+
+"Indeed" → More formal, emphasizes agreement or confirmation
+
+"As a matter of fact" → Slightly longer, adds emphasis or clarification
+
+"In reality" → When clarifying or correcting a misconception
+
+"To be precise" → When you want to be more exact
