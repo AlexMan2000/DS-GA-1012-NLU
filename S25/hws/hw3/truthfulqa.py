@@ -20,7 +20,6 @@ from tqdm import tqdm
 from transformers import Pipeline, AutoModelForCausalLM, AutoTokenizer
 
 """ Helper functions """
-""""""
 
 def print_delay(*args, **kwargs):
     """
@@ -165,7 +164,12 @@ class MultipleChoicePipeline(Pipeline):
                 text 5 corresponds to answer choice 1 for question 1,
                 etc.
         """
-        raise NotImplementedError("Problem 2c has not been completed yet!")
+        num_q = len(batch["question"])
+        input_texts = []
+        for i in range(num_q):
+            for choice in batch["choices"][i]:
+                input_texts.append(f"{self._demos}Q: {batch['question'][i]}\nA:{self._system_prompt} {choice}")
+        return input_texts
 
     def preprocess(self, batch: Dict[str, Any]) -> Dict[str, torch.Tensor]:
         """
