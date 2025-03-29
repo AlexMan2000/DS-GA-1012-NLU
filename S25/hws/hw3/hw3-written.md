@@ -13,7 +13,7 @@ normalized likelihood of the true answers (normalized across all true and false 
 
 ## Problem 1c
 - **Difference between MC1 and MC2**: In MC1, there is only one correct answer out of 4-5 reference answers but in MC2 there are multiple correct answers.
-- **Difference between MC1 and text classification**: MC1's candidate answers don't necessarily have a fixed list of categories while text-classification usually only has two categories(positive/negative). Moreover, the correct answers in MC1 should be factual and truthlly grounded while labels in sentimental analysis may be biased across different human interpretations. Also MC1 is in essence a comparison-based evaluation by comparing the log probabiilties that model assign to each candidate answers while text classification is a decision task by evaluating whether model can correctly map input text to a class label.
+- **Difference between MC1 and text classification**: MC1's candidate answers don't necessarily have a fixed list of categories while text-classification usually only has two categories(positive/negative). Moreover, the correct answers in MC1 should be factual and truthlly grounded while labels in sentimental analysis may be biased across different human interpretations. Most importantly, MC1 is in essence a comparison-based evaluation by comparing the log probabiilties that model assign to each candidate answers while text classification is a decision task by evaluating whether model can correctly map input text to a class label.
 
 
 ## Problem 3a

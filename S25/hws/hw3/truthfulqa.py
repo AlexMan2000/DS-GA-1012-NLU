@@ -167,8 +167,8 @@ class MultipleChoicePipeline(Pipeline):
         num_q = len(batch["question"])
         input_texts = []
         for i in range(num_q):
-            for choice in batch["choices"][i]:
-                input_texts.append(f"{self._demos}Q: {batch['question'][i]}\nA:{self._system_prompt} {choice}")
+            for j in range(self.num_choices): 
+                input_texts.append(f"{self._demos}Q: {batch['question'][i]}\nA:{self._system_prompt} {batch['choices'][i][j]}")
         return input_texts
 
     def preprocess(self, batch: Dict[str, Any]) -> Dict[str, torch.Tensor]:
@@ -187,7 +187,19 @@ class MultipleChoicePipeline(Pipeline):
             These tensors should be stored on the GPU if it is being
             used; otherwise, they should be stored on the CPU
         """
-        raise NotImplementedError("Problem 2d has not been completed yet!")
+        input_texts = self._get_input_texts(batch)
+
+        # Tokenize inputs, with padding supported
+        encoded = self.tokenizer(
+            input_texts,
+            padding=True,          
+            truncation=True,       
+            return_tensors="pt"    
+        )
+        encoded = {k: v.to(self.device) for k, v in encoded.items()}
+
+        return encoded
+
 
     def _forward(self, input_: Dict[str, torch.Tensor]) -> \
             Dict[str, torch.Tensor]:
@@ -202,7 +214,13 @@ class MultipleChoicePipeline(Pipeline):
         :return: The logit scores assigned to each next-token prediction
             as well as the input_ids tensor from input_
         """
-        raise NotImplementedError("Problem 2d has not been completed yet!")
+        with torch.no_grad(): 
+            outputs = self.model(**input_)
+
+        return {
+            "input_ids": input_["input_ids"],
+            "logits": outputs.logits
+        }
 
     def postprocess(self, outputs: Dict[str, torch.Tensor]) -> Output:
         """
@@ -223,7 +241,25 @@ class MultipleChoicePipeline(Pipeline):
             responds to question i and column j corresponds to answer
             choice j
         """
-        raise NotImplementedError("Problem 2d has not been completed yet!")
+        input_ids = outputs["input_ids"]  # (batch_size * num_choices, seq_len)
+        logits = outputs["logits"]        # (batch_size * num_choices, seq_len, vocab_size)
+
+        # Delete BOS and EOS tokens for loss calculation
+        shift_logits = logits[:, :-1, :].contiguous()
+        shift_labels = input_ids[:, 1:].contiguous()
+
+        # Compute per-token loss using self.loss_fn
+        loss = self.loss_fn(shift_logits.view(-1, shift_logits.size(-1)),  # (batch_size * num_choices * seq_len, vocab_size)
+                          shift_labels.view(-1))                           # (batch_size * num_choices * seq_len, )
+        # Output shape: (batch_size * num_choices * seq_len, )
+        loss = loss.view(shift_logits.size(0), -1).sum(dim=1)  # (batch_size * num_choices, seq_len) -> (batch_size * num_choices) summing across sequence length
+
+        # Reshape to (batch_size, num_choices)
+        batch_size = input_ids.shape[0] // self.num_choices
+        loss = loss.view(batch_size, self.num_choices).cpu().numpy()
+        prediction = loss.argmin(axis=1)
+
+        return Output(loss=loss.astype(np.float32), prediction=prediction)
 
 
 def run_model(pipeline: MultipleChoicePipeline, dataset: Dataset,
