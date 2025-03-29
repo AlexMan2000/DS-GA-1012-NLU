@@ -10,3 +10,11 @@ dependencies:
       - transformers
       - torch
       - numpy
+      - scikit-learn
+      - ipywidgets
+      - notebook
+      - evaluate
+      - tqdm
+      - pandas
+      - matplotlib
+    
