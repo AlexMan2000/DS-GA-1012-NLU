@@ -1,4 +1,4 @@
-# Homework 2 Written Question Answers
+# Homework 3 Written Question Answers
 
 ## Problem 1a
 
